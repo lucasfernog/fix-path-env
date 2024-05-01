@@ -6,7 +6,7 @@ license = "Apache-2.0 OR MIT"
 edition = "2021"
 
 [dependencies]
-thiserror = "1"
+thiserror = "1.0.59"
 
 [target."cfg(not(target_os = \"windows\"))".dependencies]
 strip-ansi-escapes = "0.2"
