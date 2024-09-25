@@ -13,12 +13,17 @@ pub enum Error {
   EchoFailed(String),
 }
 
+pub struct FixResults {
+  pub shell: String,
+  pub env_vars: Vec<String>,
+}
+
 /// Reads the shell configuration to properly set all given environment variables.
 ///
 /// ## Platform-specific
 ///
 /// - **Windows**: Does nothing as the environment variables are already set.
-pub fn fix_vars(vars: &[&str]) -> std::result::Result<(), Error> {
+pub fn fix_vars(vars: &[&str]) -> std::result::Result<FixResults, Error> {
   #[cfg(windows)]
   {
     let _ = vars;
@@ -34,7 +39,7 @@ pub fn fix_vars(vars: &[&str]) -> std::result::Result<(), Error> {
     };
     let shell = std::env::var("SHELL").unwrap_or_else(|_| default_shell.into());
 
-    let out = std::process::Command::new(shell)
+    let out = std::process::Command::new(shell.clone())
       .arg("-ilc")
       .arg("echo -n \"_SHELL_ENV_DELIMITER_\"; env; echo -n \"_SHELL_ENV_DELIMITER_\"; exit")
       // Disables Oh My Zsh auto-update thing that can block the process.
@@ -43,6 +48,8 @@ pub fn fix_vars(vars: &[&str]) -> std::result::Result<(), Error> {
       .map_err(Error::Shell)?;
 
     if out.status.success() {
+      let mut results = FixResults { shell, env_vars: vec![] };
+
       let stdout = String::from_utf8_lossy(&out.stdout).into_owned();
       let env = stdout
         .split("_SHELL_ENV_DELIMITER_")
@@ -55,11 +62,12 @@ pub fn fix_vars(vars: &[&str]) -> std::result::Result<(), Error> {
         let mut s = line.splitn(2, '=');
         if let (Some(var), Some(value)) = (s.next(), s.next()) {
           if vars.is_empty() || vars.contains(&var) {
+            results.env_vars.push(var.into());
             std::env::set_var(var, value);
           }
         }
       }
-      Ok(())
+      Ok(results)
     } else {
       Err(Error::EchoFailed(
         String::from_utf8_lossy(&out.stderr).into_owned(),
@@ -73,7 +81,7 @@ pub fn fix_vars(vars: &[&str]) -> std::result::Result<(), Error> {
 /// ## Platform-specific
 ///
 /// - **Windows**: Does nothing as the environment variables are already set.
-pub fn fix() -> std::result::Result<(), Error> {
+pub fn fix() -> std::result::Result<FixResults, Error> {
   fix_vars(&["PATH"])
 }
 
@@ -82,6 +90,6 @@ pub fn fix() -> std::result::Result<(), Error> {
 /// ## Platform-specific
 ///
 /// - **Windows**: Does nothing as the environment variables are already set.
-pub fn fix_all_vars() -> std::result::Result<(), Error> {
+pub fn fix_all_vars() -> std::result::Result<FixResults, Error> {
   fix_vars(&[])
 }

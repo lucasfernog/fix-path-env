@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-License-Identifier: MIT
 
-use fix_path_env::fix;
+use fix_path_env::fix_all_vars;
 
 fn main() {
-  if let Err(e) = fix() {
+  if let Err(e) = fix_all_vars() {
     println!("{}", e);
-  } else {
-    println!("PATH: {}", std::env::var("PATH").unwrap());
   }
 }
