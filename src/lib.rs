@@ -40,6 +40,7 @@ pub fn fix_vars(vars: &[&str]) -> std::result::Result<FixResults, Error> {
     let shell = std::env::var("SHELL").unwrap_or_else(|_| default_shell.into());
 
     let out = std::process::Command::new(shell.clone())
+      .current_dir(home::home_dir().unwrap_or_default())
       .arg("-ilc")
       .arg("echo -n \"_SHELL_ENV_DELIMITER_\"; env; echo -n \"_SHELL_ENV_DELIMITER_\"; exit")
       // Disables Oh My Zsh auto-update thing that can block the process.
