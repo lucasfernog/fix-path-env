@@ -34,13 +34,19 @@ pub fn fix_vars(vars: &[&str]) -> std::result::Result<(), Error> {
     };
     let shell = std::env::var("SHELL").unwrap_or_else(|_| default_shell.into());
 
-    let out = std::process::Command::new(shell)
+    let mut cmd = std::process::Command::new(shell);
+
+    cmd
       .arg("-ilc")
       .arg("echo -n \"_SHELL_ENV_DELIMITER_\"; env; echo -n \"_SHELL_ENV_DELIMITER_\"; exit")
       // Disables Oh My Zsh auto-update thing that can block the process.
-      .env("DISABLE_AUTO_UPDATE", "true")
-      .output()
-      .map_err(Error::Shell)?;
+      .env("DISABLE_AUTO_UPDATE", "true");
+
+    if let Some(home) = home::home_dir() {
+      cmd.current_dir(home);
+    }
+
+    let out = cmd.output().map_err(Error::Shell)?;
 
     if out.status.success() {
       let stdout = String::from_utf8_lossy(&out.stdout).into_owned();
