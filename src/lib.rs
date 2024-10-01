@@ -36,13 +36,14 @@ pub fn fix_vars(vars: &[&str]) -> std::result::Result<(), Error> {
 
     let mut cmd = std::process::Command::new(shell);
 
-    cmd.arg("-ilc")
+    cmd
+      .arg("-ilc")
       .arg("echo -n \"_SHELL_ENV_DELIMITER_\"; env; echo -n \"_SHELL_ENV_DELIMITER_\"; exit")
       // Disables Oh My Zsh auto-update thing that can block the process.
       .env("DISABLE_AUTO_UPDATE", "true");
 
     if let Some(home) = home::home_dir() {
-        cmd.current_dir(home);
+      cmd.current_dir(home);
     }
 
     let out = cmd.output().map_err(Error::Shell)?;
